@@ -13,8 +13,8 @@ println("""
 """)
 
 struct OneHot
-    index::Unsigned
-    length::Unsigned
+    index::UInt
+    length::UInt
     function OneHot(index, length)
         if index > length
             error("index should be smaller than length")
@@ -70,8 +70,8 @@ println("""
 """)
 
 struct OneHotVector <: AbstractVector{Bool}
-    index::Unsigned
-    length::Unsigned
+    index::UInt
+    length::UInt
     function OneHotVector(index, length)
         if index > length
             error("index should be smaller than length")
@@ -80,7 +80,7 @@ struct OneHotVector <: AbstractVector{Bool}
     end
 end
 
-size(v::OneHotVector) = (Int64(v.length),)
+size(v::OneHotVector) = (v.length,)
 getindex(v::OneHotVector, i::Integer) = i == v.index
 
 println("OneHotVector(6, 9) = $(OneHotVector(6, 9))\n")
