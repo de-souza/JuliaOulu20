@@ -1,4 +1,5 @@
-import Base: size, getindex, *, length
+using BenchmarkTools
+import Base: *, length, size, getindex
 
 println("""
     1. A one-hot vector can be described by its length and the index of
@@ -11,7 +12,7 @@ println("""
     arguments are in the wrong order.
 """)
 
-struct OneHot <: AbstractVector{Bool}
+struct OneHot
     index::Unsigned
     length::Unsigned
     function OneHot(index, length)
@@ -22,24 +23,17 @@ struct OneHot <: AbstractVector{Bool}
     end
 end
 
+println("OneHot(6, 9) = $(OneHot(6, 9))\n")
+
 println("""
-    The size() and getindex() methods are defined to allow displaying
-    the OneHot type.
+    3. To make the innersum() function work, a length() and a getindex()
+    methods are added along with a method for multiplying a matrix with
+    a one-hot vector.
 """)
 
-size(v::OneHot) = (v.length,)
+*(a::AbstractMatrix, v::OneHot) = a[:, v.index]
+length(v::OneHot) = v.length
 getindex(v::OneHot, i::Integer) = i == v.index
-getindex(v::OneHot, ::Colon) = OneHot(v.index, v.length)
-
-display(OneHot(6, 9))
-
-println("""
-    3. Add a length() and a method for multiplying a matrix with a one-
-    hot vector to make the innersum() function work.
-""")
-
-*(a::AbstractMatrix, v::OneHot) = a[v.index]
-length(v::OneHot) = Int(v.length)
 
 function innersum(A, vs)
     t = zero(eltype(A)) # generic!
@@ -53,6 +47,54 @@ function innersum(A, vs)
 end
 
 A = rand(3, 3)
-vs = [OneHot(rand(1:3), 3) for _ = 1:10]
+vs = [rand(3) for _ = 1:10]
+vs_onehot = [OneHot(rand(1:3), 3) for _ = 1:10]
 
-display(innersum(A, vs))
+println("innersum(A, vs) = $(innersum(A, vs))")
+println("innersum(A, vs_onehot) = $(innersum(A, vs_onehot))\n")
+
+println("""
+    4. Comparison of the speed of innersum() with a OneHot and innersum()
+    with a Vector{Float64}:
+""")
+
+print("@btime (innersum(A, vs)):")
+@btime (innersum(A, vs))
+print("@btime (innersum(A, vs_onehot)):")
+@btime (innersum(A, vs_onehot))
+println()
+
+println("""
+    5. A OneHotVector composite type is defined. It is identical to
+    OneHot but is declared to be a subtype of AbstractVector{Bool}.
+""")
+
+struct OneHotVector <: AbstractVector{Bool}
+    index::Unsigned
+    length::Unsigned
+    function OneHotVector(index, length)
+        if index > length
+            error("index should be smaller than length")
+        end
+        new(index, length)
+    end
+end
+
+size(v::OneHotVector) = (Int64(v.length),)
+getindex(v::OneHotVector, i::Integer) = i == v.index
+
+println("OneHotVector(6, 9) = $(OneHotVector(6, 9))\n")
+
+println("""
+    6. Comparison of the speed of innersum() with a OneHot, with a
+    OneHotVector and a Vector{Float64}.
+""")
+
+vs_onehotvector = [OneHotVector(rand(1:3), 3) for _ = 1:10]
+
+print("@btime (innersum(A, vs)):")
+@btime (innersum(A, vs))
+print("@btime (innersum(A, vs_onehot)):")
+@btime (innersum(A, vs_onehot))
+print("@btime (innersum(A, vs_onehotvector)):")
+@btime (innersum(A, vs_onehotvector))
